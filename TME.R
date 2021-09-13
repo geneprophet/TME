@@ -47,7 +47,23 @@ gsva.es[1:5, 1:5]
 expressionMatrix["FLT1",1:4]
 write.csv(gsva.es,file = "ssgsea.txt")
 
+library('pheatmap')
 
+# hierarchal cluster 
+mean(gsva.es[1,])
+sd(gsva.es[1,])
+kk <- function(x){
+  #print(x)
+  m = median(x)
+  s = sd(x)
+  return((x-m)/s)
+}
+scaled_ssgsea = apply(gsva.es,1,kk)
 
+pheatmap(gsva.es,cluster_rows =F,show_colnames = F)
+pheatmap(t(scaled_ssgsea),cluster_rows =F,show_colnames = F)
+
+signatures_corr <- cor(gsva.es)
+pheatmap(signatures_corr,cluster_rows =F,show_colnames = F,show_rownames = F)
 
 
