@@ -48,6 +48,3 @@ expressionMatrix["FLT1",1:4]
 write.csv(gsva.es,file = "ssgsea.txt")
 
 
-
-
-
