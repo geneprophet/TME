@@ -13,7 +13,7 @@ rat4 <- CreateSeuratObject(counts = data4, project = "SHR1")
 
 all <- merge(rat1,y=c(rat2,rat3,rat4),add.cell.ids = c("1","2","3","4"),project = "rat")
 all
-rownames(data1)[grep('^Mt',rownames(data1))]
+rownames(data1)[grep('^Mt-',rownames(data1))]
 # The [[ operator can add columns to object metadata. This is a great place to stash QC stats
 all[["percent.mt"]] <- PercentageFeatureSet(all, pattern = "^Mt-")
 head(all@meta.data, 5)
@@ -26,7 +26,12 @@ plot1 <- FeatureScatter(all, feature1 = "nCount_RNA", feature2 = "percent.mt")
 plot2 <- FeatureScatter(all, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
 plot1 + plot2
 
-all <- subset(all, subset = nFeature_RNA > 200 & nFeature_RNA < 4000 & percent.mt < 50)
+all <- subset(all, subset = nCount_RNA < 30000 & nFeature_RNA < 4000 & percent.mt < 50)
+
+VlnPlot(all, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+head(all@assays$RNA@counts)
+
+
 
 all <- NormalizeData(all, normalization.method = "LogNormalize", scale.factor = 40000)
 

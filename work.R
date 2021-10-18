@@ -1,5 +1,4 @@
-#work2
-
+#homework2
 ############
 library(readr)
 work2 <- read_csv("~/Desktop/助教/work2/work2.csv")
@@ -19,15 +18,12 @@ work3=work2[,-1]
 dt = unlist(apply(work3, 2, kk))
 length(which(dt<=0.05))
 
-#work3
+#homework3
 colnames(work2)
 df <- work2[,names(which(dt>0.05))]
 LD <- cor(df)^2
-# showing linkage disequilibriumlibrary(pheatmap)
-## Warning: package 'pheatmap' was built under R version 3.5.1
 color <- gray(100:0/100)
 library(pheatmap)
-#pheatmap(LD[1:10, 1:10], cluster_rows = F, cluster_cols = F, col = color)
 pheatmap(LD, cluster_rows = F, cluster_cols = F, col = color, labels_row = "", labels_col = "")
 
 
@@ -93,4 +89,4 @@ Sys.time()
 head(assocResult1)
 
 #########################
-
+dat <-read.table('/Users/kanghongen/Desktop/lesson4/example/extra.ped')
