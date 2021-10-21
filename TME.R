@@ -49,8 +49,7 @@ write.csv(gsva.es,file = "ssgsea.txt")
 
 library('pheatmap')
 
-<<<<<<< HEAD
-=======
+
 # hierarchal cluster 
 mean(gsva.es[1,])
 sd(gsva.es[1,])
@@ -69,7 +68,6 @@ pheatmap(t(scaled_ssgsea),cluster_rows =F,show_colnames = F)
 #pheatmap(signatures_corr,cluster_rows =F,show_colnames = F,show_rownames = F)
 
 signatures_genes=unique(X29Fges$Gene)
-
 
 
 
@@ -130,4 +128,3 @@ rownames(ccc2)=rownames(ccc)
 ccc3=apply(ccc2,1,function(x){if(min(x)<0.05) {return(x)} else{return()}})
 
 
->>>>>>> 3c2ba653b87c8620a952007b65c1106a95f566e4

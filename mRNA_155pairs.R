@@ -3,8 +3,8 @@ mRNA_count_155pair <- read_csv("mRNA_count_155pair.csv")
 #View(mRNA_count_155pair)
 
 genes = unlist(lapply(strsplit(mRNA_count_155pair$EnsemblGene_GeneSymbol,split = '_'),function(x) {return(x[2])}))
-mRNA_count_155pair$gene = genes
-
+mRNA_count_155pair$EnsemblGene_GeneSymbol = genes
+write.csv(mRNA_count_155pair[,1:20],file = "mRNA_count_155pair_symbol.csv",row.names = F)
 ###get protein coding genes from ensembl
 library(biomaRt)
 listMarts(host="uswest.ensembl.org")
