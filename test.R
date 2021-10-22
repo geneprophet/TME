@@ -121,7 +121,7 @@ colnames(edge_weight) = colnames(expr)[1:ncol(edge_weight)]
 
 ### edge set ssGSEA
 gsva(edge_weight, edgesets, method="ssgsea") -> test2
-
+library(gplots)
 heatmap.2(test2, trace="none") -> fit
 cutree(as.hclust(fit$colDendrogram), 4) -> x
 

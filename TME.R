@@ -32,7 +32,33 @@ gsva.es <- gsva(expressionMatrix, geneSet,method="ssgsea", verbose=FALSE)
 dim(gsva.es)
 gsva.es[1:5, 1:5]
 
-#pathwaycommons
+heatmap.2(gsva.es, trace="none") -> fit
+cutree(as.hclust(fit$colDendrogram), 4) -> x
+
+
+
+library('pheatmap')
+# hierarchal cluster 
+# 
+# mean(gsva.es[1,])
+# sd(gsva.es[1,])
+# kk <- function(x){
+#   #print(x)
+#   m = median(x)
+#   s = sd(x)
+#   return((x-m)/s)
+# }
+# scaled_ssgsea = apply(gsva.es,1,kk)
+
+
+pheatmap(gsva.es,cluster_rows =F,show_colnames = F) -> res
+cutree(res$tree_col,k=1)
+plot(res$tree_col)
+#pheatmap(t(scaled_ssgsea),cluster_rows =F,show_colnames = F)
+
+
+##########################################
+#pathwaycommons 
 network <- read_delim("skcm/PathwayCommons12.All.hgnc.txt", 
                       delim = "\t", escape_double = FALSE, 
                       trim_ws = TRUE)
@@ -83,7 +109,7 @@ for(k1 in 1:(length(geneSet)-1) ){
 }
 
 
-#TODO:mean the expression of paired gene and perform ssgsea
+#mean the expression of paired gene and perform ssgsea
 ### edge weights per sample
 match(network$PARTICIPANT_A, rownames(expressionMatrix)) -> idx1
 match(network$PARTICIPANT_B, rownames(expressionMatrix)) -> idx2
@@ -94,29 +120,21 @@ for(k in 1:ncol(expressionMatrix)){
   edgeWeight = cbind(edgeWeight, ee)
   cat(k,",",sep="")
 }
+dim(edgeWeight)
 rownames(edgeWeight) = paste("E", 1:nrow(edgeWeight), sep="")
 colnames(edgeWeight) = colnames(expressionMatrix)[1:ncol(edgeWeight)]
+edgeWeight[1:5,1:5]
 ### edge set ssGSEA
 gsva(edgeWeight, edgeSets, method="ssgsea") -> test2
+library(gplots)
+heatmap.2(test2, trace="none") -> fit
+cutree(as.hclust(fit$colDendrogram), 4) -> x
+
+match(names(x), anno[,1]) -> idx
+cbind(x, anno[idx,]) -> x1
+table(x1[,1], x1[,3])
 
 
-
-library('pheatmap')
-
-
-# hierarchal cluster 
-mean(gsva.es[1,])
-sd(gsva.es[1,])
-kk <- function(x){
-  #print(x)
-  m = median(x)
-  s = sd(x)
-  return((x-m)/s)
-}
-scaled_ssgsea = apply(gsva.es,1,kk)
-
-pheatmap(gsva.es,cluster_rows =F,show_colnames = F)
-pheatmap(t(scaled_ssgsea),cluster_rows =F,show_colnames = F)
 
 #signatures_corr <- cor(gsva.es)
 #pheatmap(signatures_corr,cluster_rows =F,show_colnames = F,show_rownames = F)
