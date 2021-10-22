@@ -1,4 +1,17 @@
-####################################################################
+###get protein coding genes from ensembl
+library(biomaRt)
+listMarts(host="uswest.ensembl.org")
+ensembl_us_west = useMart(biomart="ENSEMBL_MART_ENSEMBL", host="uswest.ensembl.org")
+head(listDatasets(ensembl_us_west))
+ensembl = useEnsembl(biomart="ensembl", dataset="hsapiens_gene_ensembl")
+head(listFilters(ensembl))
+head(listAttributes(ensembl))
+
+pcgs <- getBM(attributes=c('ensembl_gene_id','hgnc_symbol','gene_biotype','chromosome_name','start_position','end_position'), filters =
+                c('biotype','chromosome_name'), values =list(biotype="protein_coding",chromosome=c(as.character(seq(1:22)),"X","Y","MT")), mart = ensembl)
+#listFilters(ensembl)
+
+
 ## import SKCM expression matrix
 library(readr)
 HiSeqV2_PANCAN <- read_delim("./skcm/HiSeqV2",
