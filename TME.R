@@ -1,35 +1,22 @@
-#https://github.com/GSEA-MSigDB/ssGSEA-gpmodule
-#https://github.com/broadinstitute/ssGSEA2.0
-if (!requireNamespace("BiocManager", quietly = TRUE))
-  install.packages("BiocManager")
-
-BiocManager::install("GSVA")
-library(GSVA)
-p <- 10000 ## number of genes
-n <- 30    ## number of samples
-## simulate expression values from a standard Gaussian distribution
-X <- matrix(rnorm(p*n), nrow=p,
-            dimnames=list(paste0("g", 1:p), paste0("s", 1:n)))
-## sample gene set sizes
-gs <- as.list(sample(10:100, size=100, replace=TRUE))
-## sample gene sets
-gs <- lapply(gs, function(n, p)
-  paste0("g", sample(1:p, size=n, replace=FALSE)), p)
-names(gs) <- paste0("gs", 1:length(gs))
-gsva.es <- gsva(X, gs,method="ssgsea", verbose=FALSE)
-dim(gsva.es)
-gsva.es[1:5, 1:5]
 ####################################################################
 ## import SKCM expression matrix
 library(readr)
-HiSeqV2_PANCAN <- read_delim("HiSeqV2_PANCAN",
+HiSeqV2_PANCAN <- read_delim("./skcm/HiSeqV2",
                   delim = "\t", escape_double = FALSE,
                   trim_ws = TRUE)
 
 expressionMatrix <- as.matrix(HiSeqV2_PANCAN[,-1])
-rownames(expressionMatrix) = HiSeqV2_PANCAN$Gene
+rownames(expressionMatrix) = HiSeqV2_PANCAN$sample
 expressionMatrix[1:5,1:5]
+sapply(colnames(expressionMatrix), function(u){strsplit(u, split="-")[[1]][4]}) -> type
+expressionMatrix = expressionMatrix[, type=="06"]
+dim(expressionMatrix)
 
+apply(expressionMatrix, 1, sum) -> check
+expressionMatrix = expressionMatrix[check!=0, ]
+dim(expressionMatrix)
+
+# signatures of 29 Fges
 X29Fges <- read_delim("29Fges.txt", delim = "\t", 
                       escape_double = FALSE, trim_ws = TRUE)
 
@@ -40,12 +27,79 @@ for (i in all) {
   #assign(i,b)
   geneSet[[i]] = b
 }
+library("GSVA")
 gsva.es <- gsva(expressionMatrix, geneSet,method="ssgsea", verbose=FALSE)
 dim(gsva.es)
 gsva.es[1:5, 1:5]
 
-expressionMatrix["FLT1",1:4]
-write.csv(gsva.es,file = "ssgsea.txt")
+#pathwaycommons
+network <- read_delim("skcm/PathwayCommons12.All.hgnc.txt", 
+                      delim = "\t", escape_double = FALSE, 
+                      trim_ws = TRUE)
+dim(network)
+which(network$PARTICIPANT_A %in% rownames(expressionMatrix) & network$PARTICIPANT_B %in% rownames(expressionMatrix)) -> ii
+network = network[ii, ]
+dim(network)
+
+# prepare edge sets
+edgeSets = list()
+for(k in 1:length(geneSet)){
+  genes = geneSet[[k]]
+  which(network$PARTICIPANT_A %in% genes & network$PARTICIPANT_B %in% genes ) -> ii
+  paste0("E", ii) -> ee
+  edgeSets[[ names(geneSet)[k] ]] = ee
+}
+
+crossEdges = c()
+for(k1 in 1:(length(geneSet)-1) ){
+  genes_1 = geneSet[[k1]]
+  for(k2 in (k1+1):length(geneSet)){
+    genes_2 = geneSet[[k2]]
+    genes_3 = intersect(genes_1, genes_2)
+    which(network$PARTICIPANT_A %in% genes_3 & network$PARTICIPANT_B %in% genes_3) -> ii
+    crossEdges = c(crossEdges, ii)
+  }
+}
+paste("E", crossEdges, sep="") -> ee
+edgeSets[[ "crossEdges" ]] = ee
+
+for(k1 in 1:(length(geneSet)-1) ){
+  genes_1 = geneSet[[k1]]
+  for(k2 in (k1+1):length(geneSet)){
+    genes_2 = geneSet[[k2]]
+    genes_3 = intersect(genes_1, genes_2)
+    
+    genes_1 = setdiff(genes_1, genes_3)
+    genes_2 = setdiff(genes_2, genes_3)
+    
+    which(network$PARTICIPANT_A %in% genes_1 & network$PARTICIPANT_B %in% genes_2) -> ii_1
+    which(network$PARTICIPANT_A %in% genes_2 & network$PARTICIPANT_B %in% genes_1) -> ii_2
+    ii = union(ii_1, ii_2)
+    if(length(ii) >= 5){
+      paste("E", ii, sep="") -> ee
+      edgeSets[[ paste("C_", k1, "_", k2, sep="") ]] = ee
+    }
+  }
+}
+
+
+#TODO:mean the expression of paired gene and perform ssgsea
+### edge weights per sample
+match(network$PARTICIPANT_A, rownames(expressionMatrix)) -> idx1
+match(network$PARTICIPANT_B, rownames(expressionMatrix)) -> idx2
+
+edgeWeight = c()
+for(k in 1:ncol(expressionMatrix)){
+  apply(cbind(expressionMatrix[idx1, k], expressionMatrix[idx2, k]), 1, mean) -> ee
+  edgeWeight = cbind(edgeWeight, ee)
+  cat(k,",",sep="")
+}
+rownames(edgeWeight) = paste("E", 1:nrow(edgeWeight), sep="")
+colnames(edgeWeight) = colnames(expressionMatrix)[1:ncol(edgeWeight)]
+### edge set ssGSEA
+gsva(edgeWeight, edgeSets, method="ssgsea") -> test2
+
+
 
 library('pheatmap')
 
@@ -110,21 +164,5 @@ meta = data.frame(Cell,cell_type)
 #write.table(gsva.es,file = 'ssgsea.txt',sep = "\t")
 write.table(interactions,file = "interactions.txt",sep = "\t",row.names = F)
 write.table(meta,file = "meta.txt",sep = "\t",row.names = F)
-
-
-
-#######
-library(readr)
-ccc_result <- read_delim("ccc_result.txt", 
-                         delim = "\t", escape_double = FALSE, 
-                         trim_ws = TRUE)
-ccc = ccc_result[,-1]
-rowname=paste(ccc$partner_a,ccc$partner_b,sep = '_')
-ccc = ccc[,-c(1,2)]
-rownames(ccc)=rowname
-ccc2 = ccc[,c(1,6,11,16)]
-rownames(ccc2)=rownames(ccc)
-
-ccc3=apply(ccc2,1,function(x){if(min(x)<0.05) {return(x)} else{return()}})
 
 
