@@ -167,140 +167,157 @@ for (path in list.dirs(path = './TCGA',recursive = F)) {
   
 }
 
-# 
-# ## import SKCM expression matrix
-# ###constract the expression matrix
-# 
-# 
-# HiSeqV2_PANCAN <- read_delim("./skcm/HiSeqV2",
-#                  delim = "\t", escape_double = FALSE,
-#                  trim_ws = TRUE)
-# expressionMatrix <- as.matrix(HiSeqV2_PANCAN[,-1])
-# rownames(expressionMatrix) = HiSeqV2_PANCAN$sample
-# expressionMatrix[1:5,1:5]
-# sapply(colnames(expressionMatrix), function(u){unlist(strsplit(u, split="-"))[4]}) -> type
-# expressionMatrix = expressionMatrix[, type=="06" | type=="01"]
-# dim(expressionMatrix)
-# 
-# apply(expressionMatrix, 1, sum) -> check
-# expressionMatrix = expressionMatrix[check!=0, ]
-# dim(expressionMatrix)
-# 
-# 
-# ## ssgsea score
-# library("GSVA")
-# gsva.es <- gsva(expressionMatrix, geneSet,method="ssgsea", verbose=FALSE)
-# dim(gsva.es)
-# gsva.es[1:5, 1:5]
-# 
-# # heatmap.2(gsva.es, trace="none") -> fit
-# # cutree(as.hclust(fit$colDendrogram), 4) -> x
-# 
-# library('pheatmap')
-# # hierarchal cluster 
-# pheatmap(gsva.es,cluster_rows =F,show_colnames = F) -> res
-# cutree(res$tree_col,k=4) -> x1
-# 
-# ###read the survival data
-# survivalData <- read_delim("TCGA/SKCM/survival_SKCM_survival.txt", 
-#                            delim = "\t", escape_double = FALSE, 
-#                            trim_ws = TRUE)
-# survivalData2 <- merge(survivalData,data.frame(sample=names(x1),cluster=x1),by='sample',all.x = T,sort = F)
-# survivalData2 <- survivalData2[which(!is.na(survivalData2$cluster)),]
-# 
-# 
-# library(survminer)
-# library(survival) 
-# fit <- survfit(Surv(OS.time,OS) ~ cluster,data=survivalData2)
-# #summary(fit)
-# ggsurvplot(fit, data=survivalData2,pval = TRUE,ggtheme = theme_minimal())
-# 
-# 
-# ##########################################
-# #pathwaycommons 
-# network <- read_delim("skcm/PathwayCommons12.All.hgnc.txt", 
-#                       delim = "\t", escape_double = FALSE, 
-#                       trim_ws = TRUE)
-# dim(network)
-# which(network$PARTICIPANT_A %in% rownames(expressionMatrix) & network$PARTICIPANT_B %in% rownames(expressionMatrix)) -> ii
-# network = network[ii, ]
-# dim(network)
-# 
-# # prepare edge sets
-# edgeSets = list()
-# for(k in 1:length(geneSet)){
-#   genes = geneSet[[k]]
-#   which(network$PARTICIPANT_A %in% genes & network$PARTICIPANT_B %in% genes ) -> ii
-#   paste0("E", ii) -> ee
-#   edgeSets[[ names(geneSet)[k] ]] = ee
-# }
-# 
-# crossEdges = c()
-# for(k1 in 1:(length(geneSet)-1) ){
-#   genes_1 = geneSet[[k1]]
-#   for(k2 in (k1+1):length(geneSet)){
-#     genes_2 = geneSet[[k2]]
-#     genes_3 = intersect(genes_1, genes_2)
-#     which(network$PARTICIPANT_A %in% genes_3 & network$PARTICIPANT_B %in% genes_3) -> ii
-#     crossEdges = c(crossEdges, ii)
-#   }
-# }
-# paste("E", crossEdges, sep="") -> ee
-# edgeSets[[ "crossEdges" ]] = ee
-# 
-# for(k1 in 1:(length(geneSet)-1) ){
-#   genes_1 = geneSet[[k1]]
-#   for(k2 in (k1+1):length(geneSet)){
-#     genes_2 = geneSet[[k2]]
-#     genes_3 = intersect(genes_1, genes_2)
-#     
-#     genes_1 = setdiff(genes_1, genes_3)
-#     genes_2 = setdiff(genes_2, genes_3)
-#     
-#     which(network$PARTICIPANT_A %in% genes_1 & network$PARTICIPANT_B %in% genes_2) -> ii_1
-#     which(network$PARTICIPANT_A %in% genes_2 & network$PARTICIPANT_B %in% genes_1) -> ii_2
-#     ii = union(ii_1, ii_2)
-#     if(length(ii) >= 5){
-#       paste("E", ii, sep="") -> ee
-#       edgeSets[[ paste("C_", k1, "_", k2, sep="") ]] = ee
-#     }
-#   }
-# }
-# 
-# 
-# #mean the expression of paired gene and perform ssgsea
-# ### edge weights per sample
-# match(network$PARTICIPANT_A, rownames(expressionMatrix)) -> idx1
-# match(network$PARTICIPANT_B, rownames(expressionMatrix)) -> idx2
-# 
-# edgeWeight = c()
-# for(k in 1:ncol(expressionMatrix)){
-#   apply(cbind(expressionMatrix[idx1, k], expressionMatrix[idx2, k]), 1, mean) -> ee
-#   edgeWeight = cbind(edgeWeight, ee)
-#   cat(k,",",sep="")
-# }
-# dim(edgeWeight)
-# rownames(edgeWeight) = paste("E", 1:nrow(edgeWeight), sep="")
-# colnames(edgeWeight) = colnames(expressionMatrix)[1:ncol(edgeWeight)]
-# edgeWeight[1:5,1:5]
-# ### edge set ssGSEA
-# gsva(edgeWeight, edgeSets, method="ssgsea") -> test2
-# 
-# # library(gplots)
-# # heatmap.2(test2, trace="none") -> fit
-# # cutree(as.hclust(fit$colDendrogram), 4) -> x2
-# 
-# pheatmap(test2,cluster_rows =F,show_colnames = F) -> res2
-# cutree(res2$tree_col,k=4) -> x2
-# 
-# ###survival analysis
-# survivalData3 <- merge(survivalData,data.frame(sample=names(x2),cluster=x2),by='sample',all.x = T,sort = F)
-# 
-# library(survminer)
-# library(survival) 
-# fit2 <- survfit(Surv(OS.time,OS) ~ cluster,data=survivalData3)
-# 
-# jpeg(file="myplot.jpeg",quality = 100)
-# ggsurvplot(fit2, data=survivalData3,pval = TRUE,ggtheme = theme_minimal())
-# dev.off()
+########################################################
+
+immunecelltypemarkers <- read_delim("immunecelltypemarkers",
+                                    delim = "\t", escape_double = FALSE,
+                                    trim_ws = TRUE)
+geneSet2 = list()
+for (i in immunecelltypemarkers$`cell type`) {
+  trimws(unlist(strsplit(immunecelltypemarkers$markers[which(immunecelltypemarkers$`cell type`==i)],split = ","))) -> a
+  geneSet2[[paste(i,"immune cell")]] = a
+}
+#geneSet3 = c(geneSet,geneSet2)
+#geneSet = geneSet3
+####################
+geneSet$`B cells`=union(geneSet$`B cells`,geneSet2$`Plasma B cells immune cell`)
+geneSet$`T cells`= union(geneSet$`T cells`,geneSet2$`T cells naive immune cell`)
+geneSet$Treg = union(geneSet$Treg,geneSet2$`T cells regulatory immune cell`)
+geneSet$`NK cells` = union(geneSet$`NK cells`,geneSet2$`NK immune cell`)
+
+geneSet4 = c(geneSet,geneSet2[c(6:15,21:25)])
+## import SKCM expression matrix
+###constract the expression matrix
+
+
+HiSeqV2_PANCAN <- read_delim("./skcm/HiSeqV2",
+                 delim = "\t", escape_double = FALSE,
+                 trim_ws = TRUE)
+expressionMatrix <- as.matrix(HiSeqV2_PANCAN[,-1])
+rownames(expressionMatrix) = HiSeqV2_PANCAN$sample
+expressionMatrix[1:5,1:5]
+sapply(colnames(expressionMatrix), function(u){unlist(strsplit(u, split="-"))[4]}) -> type
+expressionMatrix = expressionMatrix[, type=="06" | type=="01"]
+dim(expressionMatrix)
+
+apply(expressionMatrix, 1, sum) -> check
+expressionMatrix = expressionMatrix[check!=0, ]
+dim(expressionMatrix)
+
+
+## ssgsea score
+library("GSVA")
+gsva.es <- gsva(expressionMatrix, geneSet,method="ssgsea", verbose=FALSE)
+dim(gsva.es)
+gsva.es[1:5, 1:5]
+#t(scale(t(gsva.es))) -> gsva.es2
+scale(gsva.es) -> gsva.es2
+
+library('pheatmap')
+# hierarchal cluster
+pheatmap(gsva.es,cluster_rows =F,show_colnames = F) -> res
+cutree(res$tree_col,k=4) -> x1
+
+###read the survival data
+survivalData <- read_delim("TCGA/SKCM/survival_SKCM_survival.txt",
+                           delim = "\t", escape_double = FALSE,
+                           trim_ws = TRUE)
+survivalData2 <- merge(survivalData,data.frame(sample=names(x1),cluster=x1),by='sample',all.x = T,sort = F)
+survivalData2 <- survivalData2[which(!is.na(survivalData2$cluster)),]
+
+
+library(survminer)
+library(survival)
+fit <- survfit(Surv(OS.time,OS) ~ cluster,data=survivalData2)
+#summary(fit)
+ggsurvplot(fit, data=survivalData2,pval = TRUE,ggtheme = theme_minimal())
+
+
+##########################################
+#pathwaycommons
+network <- read_delim("skcm/PathwayCommons12.All.hgnc.txt",
+                      delim = "\t", escape_double = FALSE,
+                      trim_ws = TRUE)
+dim(network)
+which(network$PARTICIPANT_A %in% rownames(expressionMatrix) & network$PARTICIPANT_B %in% rownames(expressionMatrix)) -> ii
+network = network[ii, ]
+dim(network)
+
+# prepare edge sets
+edgeSets = list()
+for(k in 1:length(geneSet)){
+  genes = geneSet[[k]]
+  which(network$PARTICIPANT_A %in% genes & network$PARTICIPANT_B %in% genes ) -> ii
+  paste0("E", ii) -> ee
+  edgeSets[[ names(geneSet)[k] ]] = ee
+}
+
+crossEdges = c()
+for(k1 in 1:(length(geneSet)-1) ){
+  genes_1 = geneSet[[k1]]
+  for(k2 in (k1+1):length(geneSet)){
+    genes_2 = geneSet[[k2]]
+    genes_3 = intersect(genes_1, genes_2)
+    which(network$PARTICIPANT_A %in% genes_3 & network$PARTICIPANT_B %in% genes_3) -> ii
+    crossEdges = c(crossEdges, ii)
+  }
+}
+paste("E", crossEdges, sep="") -> ee
+edgeSets[[ "crossEdges" ]] = ee
+
+for(k1 in 1:(length(geneSet)-1) ){
+  genes_1 = geneSet[[k1]]
+  for(k2 in (k1+1):length(geneSet)){
+    genes_2 = geneSet[[k2]]
+    genes_3 = intersect(genes_1, genes_2)
+
+    genes_1 = setdiff(genes_1, genes_3)
+    genes_2 = setdiff(genes_2, genes_3)
+
+    which(network$PARTICIPANT_A %in% genes_1 & network$PARTICIPANT_B %in% genes_2) -> ii_1
+    which(network$PARTICIPANT_A %in% genes_2 & network$PARTICIPANT_B %in% genes_1) -> ii_2
+    ii = union(ii_1, ii_2)
+    if(length(ii) >= 5){
+      paste("E", ii, sep="") -> ee
+      edgeSets[[ paste("C_", k1, "_", k2, sep="") ]] = ee
+    }
+  }
+}
+
+
+#mean the expression of paired gene and perform ssgsea
+### edge weights per sample
+match(network$PARTICIPANT_A, rownames(expressionMatrix)) -> idx1
+match(network$PARTICIPANT_B, rownames(expressionMatrix)) -> idx2
+
+edgeWeight = c()
+for(k in 1:ncol(expressionMatrix)){
+  apply(cbind(expressionMatrix[idx1, k], expressionMatrix[idx2, k]), 1, mean) -> ee
+  edgeWeight = cbind(edgeWeight, ee)
+  cat(k,",",sep="")
+}
+dim(edgeWeight)
+rownames(edgeWeight) = paste("E", 1:nrow(edgeWeight), sep="")
+colnames(edgeWeight) = colnames(expressionMatrix)[1:ncol(edgeWeight)]
+edgeWeight[1:5,1:5]
+### edge set ssGSEA
+gsva(edgeWeight, edgeSets, method="ssgsea") -> test2
+
+# library(gplots)
+# heatmap.2(test2, trace="none") -> fit
+# cutree(as.hclust(fit$colDendrogram), 4) -> x2
+
+pheatmap(test2,cluster_rows =F,show_colnames = F) -> res2
+cutree(res2$tree_col,k=4) -> x2
+
+###survival analysis
+survivalData3 <- merge(survivalData,data.frame(sample=names(x2),cluster=x2),by='sample',all.x = T,sort = F)
+
+library(survminer)
+library(survival)
+fit2 <- survfit(Surv(OS.time,OS) ~ cluster,data=survivalData3)
+
+#jpeg(file="myplot.jpeg",quality = 100)
+ggsurvplot(fit2, data=survivalData3,pval = TRUE,ggtheme = theme_minimal())
+#dev.off()
 
