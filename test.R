@@ -1,145 +1,61 @@
-### data.1
-tmp = readLines("D:/BIG/work/test/29.txt")
-genesets = list()
-for(k in 1:length(tmp)){
-	a = strsplit(tmp[k],split="\t")[[1]]
-	genesets[[ a[1] ]] = a[-1]
+#
+library(readr)
+GSE91061 <- read_csv("D:/downloads/GSE91061_BMS038109Sample.hg19KnownGene.raw.csv")
+library('org.Hs.eg.db')
+columns(org.Hs.eg.db)
+keytypes(org.Hs.eg.db)
+head(keys(org.Hs.eg.db, keytype = 'SYMBOL'))
+symbol <- select(org.Hs.eg.db,keys = as.character(GSE91061$...1), columns = 'SYMBOL',keytype = 'ENTREZID')
+GSE91061 <- cbind(gene=symbol$SYMBOL,GSE91061[,-1])
+
+library(readr)
+X29Fges <- read_delim("29Fges.txt", delim = "\t", 
+                      escape_double = FALSE, trim_ws = TRUE)
+
+all = unique(X29Fges$`Gene signature`)
+geneSet = list()
+for (i in all) {
+  b = X29Fges$Gene[which(X29Fges$`Gene signature`==i)]
+  #assign(i,b)
+  geneSet[[i]] = b
 }
 
-### data.2
-network = read.table("D:/BIG/work/19-scGWAS/PathwayCommons12.All.hgnc.exPCDHA.tsv")
+expressionMatrix <- as.matrix(GSE91061[,-1])
+rownames(expressionMatrix) = GSE91061$gene
+expressionMatrix[1:5,1:5]
+dim(expressionMatrix)
 
-### data.3
-dat = read.table("D:/BIG/work/test/HiSeqV2", as.is=T, header=T)
-expr = as.matrix(dat[,-1])
-rownames(expr) = dat[,1]
-
-sapply(colnames(expr), function(u){strsplit(u, split="\\.")[[1]][4]}) -> type
-expr = expr[, type=="06"]
-
-apply(expr, 1, sum) -> check
-expr = expr[!is.na(check), ]
-apply(expr, 1, sum) -> check
-expr = expr[check!=0, ]
-
-sapply(colnames(expr), function(u){strsplit(u, split="\\.")[[1]] -> v;paste(v[1:3], collapse="-")}) -> x1
-colnames(expr) = x1
-
-### data.4
-anno = read.table("D:/BIG/work/test/TCGA-SKCM_final_cluster.txt", as.is=T)
-
-### data.5
-surv = read.table("D:/BIG/work/test/survival_SKCM_survival.txt", header=T, sep="\t")
-
-########################################################################################
-
-### gene set ssGSEA
-gsva(expr, genesets,method="ssgsea") -> test
-heatmap.2(test, trace="none") -> fit
-cutree(as.hclust(fit$colDendrogram), 4) -> x
-
-match(names(x), anno[,1]) -> idx
-cbind(x, anno[idx,]) -> x1
-table(x1[,1], x1[,3])
-
-### survival
-library("survival")
-library("survminer")
-
-surv.data = surv[match(colnames(expr), surv[,2]),]
-Y1 = Surv(surv.data[,"OS.time"], surv.data[,"OS"])
-
-dat = data.frame(cbind(surv.data,x) )
-fit = survfit( Surv(surv.data[,"OS.time"], surv.data[,"OS"]) ~ x, data = dat)
-coxph(Y1 ~ xvector)
-
-ggsurvplot(fit, data=surv.data , risk.table = TRUE,pval = TRUE,ggtheme = theme_minimal())
-
-########################################################################################
-
-### edge set ssGSEA
-
-which(network[,1] %in% rownames(expr) & network[,2] %in% rownames(expr)) -> ii
-network = network[ii, ]
-
-### prepare edge sets
-edgesets = list()
-for(k in 1:length(genesets)){
-	genes = genesets[[k]]
-	which(network[,1] %in% genes & network[,2] %in% genes ) -> ii
-	paste("E", ii, sep="") -> ee
-	edgesets[[ names(genesets)[k] ]] = ee
-}
-
-crossedges = c()
-for(k1 in 1:(length(genesets)-1) ){
-	genes_1 = genesets[[k1]]
-	for(k2 in (k1+1):length(genesets)){
-		genes_2 = genesets[[k2]]
-		genes_3 = intersect(genes_1, genes_2)
-		which(network[,1] %in% genes_3 & network[,2] %in% genes_3) -> ii
-		crossedges = c(crossedges, ii)
-	}
-}
-paste("E", crossedges, sep="") -> ee
-edgesets[[ "crossedges" ]] = ee
-
-for(k1 in 1:(length(genesets)-1) ){
-	genes_1 = genesets[[k1]]
-	for(k2 in (k1+1):length(genesets)){
-		genes_2 = genesets[[k2]]
-		genes_3 = intersect(genes_1, genes_2)
-		
-		genes_1 = setdiff(genes_1, genes_3)
-		genes_2 = setdiff(genes_2, genes_3)
-		
-		which(network[,1] %in% genes_1 & network[,2] %in% genes_2) -> ii_1
-		which(network[,1] %in% genes_2 & network[,2] %in% genes_1) -> ii_2
-		ii = union(ii_1, ii_2)
-		if(length(ii) >= 5){
-			paste("E", ii, sep="") -> ee
-			edgesets[[ paste("C_", k1, "_", k2, sep="") ]] = ee
-		}
-	}
-}
+apply(expressionMatrix, 1, sum) -> check
+expressionMatrix = expressionMatrix[check!=0, ]
+dim(expressionMatrix)
 
 
-### edge weights per sample
-match(network[,1], rownames(expr)) -> idx1
-match(network[,2], rownames(expr)) -> idx2
+## ssgsea score
+library("GSVA")
+gsva.es <- gsva(expressionMatrix, geneSet,method="ssgsea", verbose=FALSE)
+dim(gsva.es)
+gsva.es[1:5, 1:5]
 
-### code below, row 93 -- 98, takes time...
-
-edge_weight = c()
-for(k in 1:ncol(expr)){
-	apply(cbind(expr[idx1, k], expr[idx2, k]), 1, mean) -> ee
-	edge_weight = cbind(edge_weight, ee)
-	cat(k,",",sep="")
-}
-rownames(edge_weight) = paste("E", 1:nrow(edge_weight), sep="")
-colnames(edge_weight) = colnames(expr)[1:ncol(edge_weight)]
-
-### edge set ssGSEA
-gsva(edge_weight, edgesets, method="ssgsea") -> test2
-library(gplots)
-heatmap.2(test2, trace="none") -> fit
-cutree(as.hclust(fit$colDendrogram), 4) -> x
-
-match(names(x), anno[,1]) -> idx
-cbind(x, anno[idx,]) -> x1
-table(x1[,1], x1[,3])
+library('pheatmap')
+# hierarchal cluster
+pheatmap(gsva.es,cluster_rows =F,show_colnames = F) -> res
+cutree(res$tree_col,k=2) -> x1
 
 
-### survival analysis
+###read the survival data
+library(readxl)
+mmc2 <- read_excel("D:/downloads/mmc2.xlsx", 
+                   skip = 2)
+load('D:/downloads/Riaz_data.RData')
+survivalData <- Riaz_data$Surv.info
+sapply(names(x1),function(x){a=unlist(strsplit(x,split = "_"));if(a[2]=="On") {return(a[1])} else{return("Pre")}}) -> names(x1)
+survivalData2 <- merge(survivalData,data.frame(PatientID=names(x1),cluster=x1),by='PatientID',all.x = T,sort = F)
+survivalData2 <- survivalData2[which(!is.na(survivalData2$cluster)),]
 
-surv.data = surv[match(gsub("\\.","-",colnames(expr)), surv[,1]),]
 
-new3 = cbind(drug.response, surv.data)
-Y1 = Surv(surv.data[,"OS.time"], surv.data[,"OS"])
-
-dat = data.frame(cbind(surv.data,x) )
-fit = survfit( Surv(surv.data[,"OS.time"], surv.data[,"OS"]) ~ x, data = dat)
-coxph(Y1 ~ xvector)
-
-ggsurvplot(fit, data=surv.data , risk.table = TRUE,pval = TRUE,ggtheme = theme_minimal())
+library(survminer)
+library(survival)
+fit <- survfit(Surv(OS,OS_SOR) ~ cluster,data=survivalData2)
+#summary(fit)
+ggsurvplot(fit, data=survivalData2,pval = TRUE,ggtheme = theme_minimal())
 

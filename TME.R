@@ -177,15 +177,19 @@ for (i in immunecelltypemarkers$`cell type`) {
   trimws(unlist(strsplit(immunecelltypemarkers$markers[which(immunecelltypemarkers$`cell type`==i)],split = ","))) -> a
   geneSet2[[paste(i,"immune cell")]] = a
 }
-#geneSet3 = c(geneSet,geneSet2)
-#geneSet = geneSet3
-####################
+##impute the signatures
 geneSet$`B cells`=union(geneSet$`B cells`,geneSet2$`Plasma B cells immune cell`)
 geneSet$`T cells`= union(geneSet$`T cells`,geneSet2$`T cells naive immune cell`)
 geneSet$Treg = union(geneSet$Treg,geneSet2$`T cells regulatory immune cell`)
 geneSet$`NK cells` = union(geneSet$`NK cells`,geneSet2$`NK immune cell`)
-
-geneSet4 = c(geneSet,geneSet2[c(6:15,21:25)])
+geneSet3 = c(geneSet,geneSet2[c(6:15,21:25)])
+## impute from the ESTIMATE  signature
+library(readr)
+SI_geneset <- read_delim("SI_geneset.gmt", 
+                         delim = "\t", escape_double = FALSE, 
+                         col_names = FALSE, trim_ws = TRUE)
+#geneSet3$StromalSignature = as.character(SI_geneset[1,-c(1:2)])
+#geneSet3$ImmuneSignature = as.character(SI_geneset[2,-c(1:2)])
 ## import SKCM expression matrix
 ###constract the expression matrix
 
@@ -211,7 +215,7 @@ gsva.es <- gsva(expressionMatrix, geneSet,method="ssgsea", verbose=FALSE)
 dim(gsva.es)
 gsva.es[1:5, 1:5]
 #t(scale(t(gsva.es))) -> gsva.es2
-scale(gsva.es) -> gsva.es2
+#scale(gsva.es) -> gsva.es2
 
 library('pheatmap')
 # hierarchal cluster
@@ -229,16 +233,18 @@ survivalData2 <- survivalData2[which(!is.na(survivalData2$cluster)),]
 library(survminer)
 library(survival)
 fit <- survfit(Surv(OS.time,OS) ~ cluster,data=survivalData2)
+#fit <- survfit(Surv(PFI.time,PFI) ~ cluster,data=survivalData2)
 #summary(fit)
 ggsurvplot(fit, data=survivalData2,pval = TRUE,ggtheme = theme_minimal())
-
-
+ggsurvplot(fit, data=survivalData2,pval = TRUE,ggtheme = theme_minimal(),xlim=c(0,2100),break.time.by=300)
 ##########################################
 #pathwaycommons
-network <- read_delim("skcm/PathwayCommons12.All.hgnc.txt",
-                      delim = "\t", escape_double = FALSE,
-                      trim_ws = TRUE)
+network <- read_delim("skcm/PathwayCommons12.All.hgnc.sif", 
+                      delim = "\t", escape_double = FALSE, 
+                      col_names = FALSE, trim_ws = TRUE)
 dim(network)
+names(network) <-c("PARTICIPANT_A","Type","PARTICIPANT_B")
+network[1:3,1:3]
 which(network$PARTICIPANT_A %in% rownames(expressionMatrix) & network$PARTICIPANT_B %in% rownames(expressionMatrix)) -> ii
 network = network[ii, ]
 dim(network)
