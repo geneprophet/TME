@@ -182,12 +182,17 @@ geneSet$`B cells`=union(geneSet$`B cells`,geneSet2$`Plasma B cells immune cell`)
 geneSet$`T cells`= union(geneSet$`T cells`,geneSet2$`T cells naive immune cell`)
 geneSet$Treg = union(geneSet$Treg,geneSet2$`T cells regulatory immune cell`)
 geneSet$`NK cells` = union(geneSet$`NK cells`,geneSet2$`NK immune cell`)
+geneSet[["INF-gamma"]] = c("ID01","CXCL10","CXCL9","HLA-DRA","STAT1","INFG")
+geneSet[["IMPRES"]] = 
+geneSet[["MHC-I"]]
+geneSet[["MHC-II"]]
 geneSet3 = c(geneSet,geneSet2[c(6:15,21:25)])
+
 ## impute from the ESTIMATE  signature
-library(readr)
-SI_geneset <- read_delim("SI_geneset.gmt", 
-                         delim = "\t", escape_double = FALSE, 
-                         col_names = FALSE, trim_ws = TRUE)
+# library(readr)
+# SI_geneset <- read_delim("SI_geneset.gmt", 
+#                          delim = "\t", escape_double = FALSE, 
+#                          col_names = FALSE, trim_ws = TRUE)
 #geneSet3$StromalSignature = as.character(SI_geneset[1,-c(1:2)])
 #geneSet3$ImmuneSignature = as.character(SI_geneset[2,-c(1:2)])
 ## import SKCM expression matrix
@@ -214,8 +219,17 @@ library("GSVA")
 gsva.es <- gsva(expressionMatrix, geneSet,method="ssgsea", verbose=FALSE)
 dim(gsva.es)
 gsva.es[1:5, 1:5]
-#t(scale(t(gsva.es))) -> gsva.es2
-#scale(gsva.es) -> gsva.es2
+## louvain clustering
+# library(igraph)
+# nodes = data.frame(name=colnames(expressionMatrix))
+# edges = data.frame(from=interaction2$X1,to=interaction2$X3,type=interaction2$X2)
+# #undirected graph
+# interaction_graph = graph_from_data_frame(edges,directed = F,vertices = nodes)
+# plot(interaction_graph)
+# cluster_louvain(interaction_graph) -> cluster_results
+# l <- layout_randomly(interaction_graph,dim=2) 
+# plot(interaction_graph, layout=l)
+
 
 library('pheatmap')
 # hierarchal cluster
