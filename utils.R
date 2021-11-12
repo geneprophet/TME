@@ -7,12 +7,7 @@ write.gmt <- function(gs,file){
   })
   sink()
 }
-write.gmt(geneSet,'new_signatures.txt')
-
-write.table(t(HiSeqV2_PANCAN[,-1]),file = 'matrix.mtx',sep = "\t",col.names = F,row.names = F)
-write.table(names(HiSeqV2_PANCAN),file = 'barcodes.tsv',sep = '\n',col.names = F,row.names = F,quote = F)
-write.table(HiSeqV2_PANCAN[,1],file = 'gene.tsv',sep = '\n',col.names = F,row.names = F,quote = F)
-
+write.gmt(geneSet3,'new_signatures.txt')
 
 ######
 library(Seurat)
@@ -21,26 +16,33 @@ library(SeuratDisk)
 load('G:/AD_seurat.Rdata')
 N.loom <- as.loom(AD_seurat,filename="G:/AD.loom")
 N.loom$close_all()
+##
+##conver from anndata to seurat
+Convert("adata/adata_scvi_cm2.h5ad", dest = "h5seurat", overwrite = TRUE)
+seurat <- LoadH5Seurat("adata/adata_scvi_cm2.h5seurat")
+library(rhdf5)
+structure <- h5ls("adata/adata_scvi_cm2.h5seurat")
+cells <- h5read("adata/adata_scvi_cm2.h5seurat","cell.names")
+features <- h5read("adata/adata_scvi_cm2.h5seurat","assays/RNA/counts")
+
+###############
 
 ########
 #use vega results to hclust and survival analysis
-vega = read.csv('skcm/vega_results.csv',header = F)
+vega = read.csv('skcm/vega_results50.csv',header = F)
 vega = t(vega)
 colnames(vega) = colnames(HiSeqV2_PANCAN)[-1]
 library('pheatmap')
 # hierarchal cluster
 #pheatmap(vega[-21,],cluster_rows =F,show_colnames = F, scale = 'column') -> res
-pheatmap(vega,cluster_rows =F,show_colnames = F, scale = 'column') -> res
+pheatmap(vega,cluster_rows =F,show_colnames = F) -> res
 cutree(res$tree_col,k=4) -> x1
-
-
 ###read the survival data
 survivalData <- read_delim("TCGA/SKCM/survival_SKCM_survival.txt",
                            delim = "\t", escape_double = FALSE,
                            trim_ws = TRUE)
 survivalData2 <- merge(survivalData,data.frame(sample=names(x1),cluster=x1),by='sample',all.x = T,sort = F)
 survivalData2 <- survivalData2[which(!is.na(survivalData2$cluster)),]
-
 
 library(survminer)
 library(survival)
@@ -90,3 +92,51 @@ ggsurvplot(fit, data=survivalData2,pval = TRUE,pval.method = T,ggtheme = theme_m
 ggsurvplot(fit, data=survivalData2,pval = TRUE,ggtheme = theme_minimal(),xlim=c(0,2000),break.time.by=600)
 res.cox <- coxph(Surv(OS.time,OS) ~ cluster,data=survivalData2)
 summary(res.cox)
+
+###roc
+library(pROC)
+data("aSAH")
+head(aSAH)
+roc(aSAH$outcome,aSAH$s100b,smooth=T,auc=T,ci=T) -> r
+plot(r)
+roc.list = roc(outcome ~ s100b + ndka + wfns,data=aSAH)
+g.list = ggroc(roc.list)
+g.list
+
+
+
+##################
+##检查分类与MFP肿瘤微环境分型的一致性
+library(readr)
+annotation_panmi <- read_delim("skcm/annotation-panmi.tsv", 
+                               delim = "\t", escape_double = FALSE, 
+                               trim_ws = TRUE)
+survivalData3 <- merge(survivalData2,data.frame(sample=annotation_panmi$Sample,MFP=annotation_panmi$MFP),by.x = "_PATIENT",by.y='sample',all.x = T,sort = F)
+
+skcm_final_mfp_clusters <- read_delim("skcm/skcm_final_mfp_clusters.tsv", 
+                                      delim = "\t", escape_double = FALSE, 
+                                      col_names = FALSE, col_types = cols(X2 = col_character()), 
+                                      trim_ws = TRUE)
+survivalData4 <- merge(survivalData2,data.frame(sample=skcm_final_mfp_clusters$X1,MFP=skcm_final_mfp_clusters$X2),by.x = "sample",by.y='sample',all.x = T,sort = F)
+
+cluster1 <- survivalData3[survivalData3$cluster==1,]
+table(cluster1$MFP)
+cluster2 <- survivalData3[survivalData3$cluster==2,]
+table(cluster2$MFP)
+cluster3 <- survivalData3[survivalData3$cluster==3,]
+table(cluster3$MFP)
+cluster4 <- survivalData3[survivalData3$cluster==4,]
+table(cluster4$MFP)
+library(survminer)
+library(survival)
+fit2 <- survfit(Surv(OS.time,OS) ~ MFP,data=survivalData3)
+ggsurvplot(fit2, data=survivalData3,pval = TRUE,ggtheme = theme_minimal())
+ggsurvplot(fit2, data=survivalData3,pval = TRUE,ggtheme = theme_minimal(),xlim=c(0,1800),break.time.by=600)
+ggsurvplot(fit, data=survivalData3,pval = TRUE,ggtheme = theme_minimal(),xlim=c(0,1800),break.time.by=600)
+##only TCGA SKCM samples to classfication
+fit4 <- survfit(Surv(OS.time,OS) ~ MFP,data=survivalData4)
+ggsurvplot(fit4, data=survivalData4,pval = TRUE,ggtheme = theme_minimal())
+ggsurvplot(fit4, data=survivalData4,pval = TRUE,ggtheme = theme_minimal(),xlim=c(0,1800),break.time.by=600)
+
+
+
