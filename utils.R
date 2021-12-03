@@ -9,6 +9,59 @@ write.gmt <- function(gs,file){
 }
 write.gmt(geneSet3,'new_signatures.txt')
 
+library(clusterProfiler)
+hallmarks = read.gmt('hallmarks.gmt')
+length(unique(hallmarks$gene))
+reactom = read.gmt('reactom.gmt')
+length(unique(reactom$gene))
+gbm_aracne = read.gmt('gbm_aracne.gmt')
+length(unique(gbm_aracne$gene))
+
+# ###########
+# ## TCGAbiolinks
+# library(TCGAbiolinks)
+# library(DT)
+# query = GDCquery(project = 'TCGA-SKCM',
+#                 data.category = 'Transcriptome Profiling',
+#                 data.type = "Gene Expression Quantification",
+#                 #workflow.type = 'HTSeq - Counts',
+#                 workflow.type = 'HTSeq - FPKM',
+#                 sample.type = c("Primary Tumor","Metastatic")
+#                 )
+# datatable(
+#     getResults(query), 
+#     filter = 'top',
+#     options = list(scrollX = TRUE, keys = TRUE, pageLength = 5), 
+#     rownames = FALSE )
+# GDCdownload(query,directory = './GDC/')
+# skcm.exp <- GDCprepare(query = query,directory = './GDC/', save = TRUE, save.filename = "skcmExp.rda")
+# skcm.exp@assays@data$`HTSeq - FPKM`[1:3,1:3]
+# skcm.exp@colData@rownames
+# skcm.exp@rowRanges@elementMetadata$external_gene_name
+# expressionMatrix <- skcm.exp@assays@data$`HTSeq - FPKM`
+# expressionMatrix[1:3,1:3]
+# colnames(expressionMatrix) = skcm.exp@colData@rownames
+# rownames(expressionMatrix) = skcm.exp@rowRanges@elementMetadata$external_gene_name
+# expressionMatrix[1:3,1:3]
+
+
+#########
+##fpkmToTpm
+fpkmToTpm <- function(fpkm)
+{
+  exp(log(fpkm) - log(sum(fpkm)) + log(1e6))
+}
+
+
+##
+library("rtracklayer")
+gtf_data = import('gencode.v22.annotation.gtf') #gtf的路径
+#这里使用import导入gtf文件， 生成一个GRangs对象
+gtf_data = as.data.frame(gtf_data)
+gtf_data <- gtf_data[which(gtf_data$type == "gene" & gtf_data$gene_type=="protein_coding"),]
+
+
+
 ######
 library(Seurat)
 library(loomR)

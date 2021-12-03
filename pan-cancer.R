@@ -1,14 +1,15 @@
 ##pan-cancer
 library(Rtsne)
 library(readr)
+library(umap)
 ##merge all TCGA sample expression matrix and survival data
 expMatrix <- c()
 surData <- c()
+label <- c()
 for (path in list.dirs(path = './TCGA', recursive = F)) {
   expression_path = paste(path, list.files(path = path, pattern = "HiSeqV2"), sep = "/")
   survival_path =  paste(path, list.files(path = path, pattern = "survival"), sep = "/")
   print(path)
-  
   #import expression matrix
   HiSeqV2 <- read_delim(
     expression_path,
@@ -24,6 +25,7 @@ for (path in list.dirs(path = './TCGA', recursive = F)) {
   }) -> type
   expressionMatrix = expressionMatrix[, type == "06" | type == "01"]
   dim(expressionMatrix)
+  label = c(label,rep(strsplit(path,split = '/',fixed = T)[[1]][3],ncol(expressionMatrix)))
   
   ###read the survival data
   survivalData <- read_delim(
@@ -36,13 +38,28 @@ for (path in list.dirs(path = './TCGA', recursive = F)) {
   expMatrix <- cbind(expMatrix,expressionMatrix)
   surData <- rbind(surData,survivalData)
 }
+
 ## Executing the algorithm on curated data
-tsne <- Rtsne(expMatrix, dims = 2, perplexity=30, verbose=TRUE, max_iter = 500)
-plot(tsne$Y, t='n', main="tsne")
+# tsne <- Rtsne(expMatrix, dims = 2, perplexity=30, verbose=TRUE, max_iter = 500,check_duplicates = F)
+# plot(tsne$Y, t='n', main="tsne")
+# 
+expMatrix.umap = umap(t(expMatrix))
+library(ggplot2)
+ggplot(as.data.frame(expMatrix.umap$layout),aes(V1,V2,color=label)) +
+  geom_point() + theme_bw()
+save(list=ls(),file = 'ALL_TCGA.Rdata')
+load('ALL_TCGA.Rdata')
 
 ## ssgsea score
 library("GSVA")
-gsva.es <- gsva(expMatrix, geneSet3,method="ssgsea", verbose=FALSE)
+gsva.es <- gsva(expMatrix, geneSet,method="ssgsea", verbose=T,ssgsea.norm=F)
+dim(gsva.es)
+gsva.es[1:3,1:3]
+ssgsea.umap = umap(t(gsva.es))
+library(ggplot2)
+ggplot(as.data.frame(ssgsea.umap$layout),aes(V1,V2,color=label)) +
+  geom_point() + theme_bw()
+
 library('pheatmap')
 ## hierarchal cluster
 pheatmap(gsva.es,cluster_rows =F,show_colnames = F) -> res
