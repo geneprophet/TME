@@ -25,6 +25,14 @@ for (i in all) {
   geneSet[[i]] = b
 }
 
+######################################################
+library("qusage")
+geneSet4 = read.gmt('gene_signatures.gmt')
+#geneSet5 = c(geneSet,geneSet4[29])
+##hallmarks gene set from MSigDB
+geneSet_hallmarks = read.gmt('h.all.v7.4.symbols.gmt')
+geneSet_C2 = read.gmt('c2.all.v7.4.symbols.gmt')
+
 
 ########################################################
 
@@ -41,17 +49,19 @@ geneSet$`B cells`=union(geneSet$`B cells`,geneSet2$`Plasma B cells immune cell`)
 geneSet$`T cells`= union(geneSet$`T cells`,geneSet2$`T cells naive immune cell`)
 geneSet$Treg = union(geneSet$Treg,geneSet2$`T cells regulatory immune cell`)
 geneSet$`NK cells` = union(geneSet$`NK cells`,geneSet2$`NK immune cell`)
-geneSet[["INF-gamma"]] = c("ID01","CXCL10","CXCL9","HLA-DRA","STAT1","INFG")
-#geneSet[["INF-gamma"]] = c("IDO1","PDCD1LG2","CD27","CD8A","LAG3","CD274","CXCR6","CMKLR1","NKG7","CCL5","PSMB10","IDO1","CXCL9","HLA-DQA1","CD276","STAT1","HLA-DRB1","HLA-E")
-geneSet[["IMPRES_Activate"]] = c("OX40L","CD27","OX40L","CD40","CD28","CD137L","CD40","HVEM")
-geneSet[["IMPRES_Inhibitor"]] = c("PD-1","CTLA4","CD86","CD80","PDL-1","VISTA","TIM-3","CD200","CD276")
-geneSet[["myCAF"]] = c("MYL9","CALD1","MMP11","HOPX","BGN","IGFBP7","TPM2","CTHRC1","ACTA2","TAGLN","INHBA","COL10A1","TPM1","POSTN","GRP","CST1")
-geneSet[["iCAF"]] = c("C3","DUSP1","FBLN1","LMNA","CLU","CCDC80","MYC","EFEMP1","HAS1","NR4A1","CFD","ANXA1","CXCL12","FGF7","KLF4","EMP1","GPRC5A","SRPX","MT2A","MEDAG","IGF1","MGST1","MCL1","CEBPD","S100A10","UAP1","TNXB","CEBPB","PNRC1","SOCS3","PTGDS","FOSB","NFKBIA","CXCL2","THBS1","CCL2","OGN","GSN","DPT","PLA2G2A","NAMPT","ITM2A","RGCC","JUND","NNMT","ZFP36","PIM1","CPE","GFPT2","SOD2","KDM6B","FSTL1","FBLN2","NR4A3","MFAP5","ABL2","SGK1","CILP","UGDH","FBLN5","ADAMTS1","ADH1B","WISP2","GPX3","S100A4","IL6","HAS2","PLAC9","IGFBP6","FBN1","BDKRB1","TPPP3","RASD1","MT1A","CXCL14","PI16","APOE","IL8","ARC","PTX3","TNFAIP6","MT1E","MT1X","CXCL1")
+#geneSet[["INF-gamma"]] = c("ID01","CXCL10","CXCL9","HLA-DRA","STAT1","INFG")
+geneSet3[["INF-gamma"]] = c("TIGIT","PDCD1LG2","CD27","CD8A","LAG3","CD274","CXCR6","CMKLR1","NKG7","CCL5","PSMB10","IDO1","CXCL9","HLA-DQA1","CD276","STAT1","HLA-DRB1","HLA-E")
+geneSet3[["IMPRES_Activate"]] = c("OX40L","CD27","OX40L","CD40","CD28","CD137L","CD40","HVEM")
+geneSet3[["IMPRES_Inhibitor"]] = c("PD-1","CTLA4","CD86","CD80","PDL-1","VISTA","TIM-3","CD200","CD276")
+geneSet3[["myCAF"]] = c("MYL9","CALD1","MMP11","HOPX","BGN","IGFBP7","TPM2","CTHRC1","ACTA2","TAGLN","INHBA","COL10A1","TPM1","POSTN","GRP","CST1")
+geneSet3[["iCAF"]] = c("C3","DUSP1","FBLN1","LMNA","CLU","CCDC80","MYC","EFEMP1","HAS1","NR4A1","CFD","ANXA1","CXCL12","FGF7","KLF4","EMP1","GPRC5A","SRPX","MT2A","MEDAG","IGF1","MGST1","MCL1","CEBPD","S100A10","UAP1","TNXB","CEBPB","PNRC1","SOCS3","PTGDS","FOSB","NFKBIA","CXCL2","THBS1","CCL2","OGN","GSN","DPT","PLA2G2A","NAMPT","ITM2A","RGCC","JUND","NNMT","ZFP36","PIM1","CPE","GFPT2","SOD2","KDM6B","FSTL1","FBLN2","NR4A3","MFAP5","ABL2","SGK1","CILP","UGDH","FBLN5","ADAMTS1","ADH1B","WISP2","GPX3","S100A4","IL6","HAS2","PLAC9","IGFBP6","FBN1","BDKRB1","TPPP3","RASD1","MT1A","CXCL14","PI16","APOE","IL8","ARC","PTX3","TNFAIP6","MT1E","MT1X","CXCL1")
+geneSet3[["TGF-beta"]] = c("MMP11","TNXB","DPT","ADAMTS14","GPM6B","SERPINH1","MFAP4","COL10A1","DCN","COL11A1","FBLN5","JAM2","MYH11","ABI3BP","MMP1","COL1A1","LOXL2","MMP9","ADAM12","ACAN","RECK","PDGFRA","SPP1","FAP","LAMA2","CYR61","FGF2","COL4A6","ADAM8","COL5A2","COL5A2","TIMP1","ECM2","COL14A1","A2M","COL4A3","MMP12","FBLN1","ITGA9","ITGAX","COL5A1","COL4A4","COL7A1","COL5A3","CTGF","FLRT2","TGFBI","COMP","MFAP2","VCAN","COL1A2","TLL1","COL3A1","SULF1","POSTN","FN1","LAMC3","MFAP5")
 #geneSet$`Cancer-associated fibroblasts` = NULL
 
 geneSet3 = c(geneSet,geneSet2[c(6:15,21:25)])
+# geneSet3 = c(geneSet,geneSet2)
 
-# # impute from the ESTIMATE  signature
+# # # impute from the ESTIMATE  signature
 # library(readr)
 # SI_geneset <- read_delim("SI_geneset.gmt",
 #                          delim = "\t", escape_double = FALSE,
@@ -66,42 +76,44 @@ geneSet3 = c(geneSet,geneSet2[c(6:15,21:25)])
 #                  trim_ws = TRUE)
 ##gdc tcga
 library(readr)
-TCGA_SKCM_htseq_fpkm <- read_delim("skcm/TCGA-SKCM.htseq_fpkm.tsv",
+CANCER = "SKCM"
+TCGA_SKCM_htseq_fpkm <- read_delim(paste0("D:/TCGA _GDC/TCGA-",CANCER,".htseq_fpkm.tsv.gz"),
                                    delim = "\t", escape_double = FALSE,
                                    trim_ws = TRUE)
-##
+# ###################
+##log2(fpkm+1) to fpkm
+2^TCGA_SKCM_htseq_fpkm[,-1] -1 -> fpkm
+##fpkm to tpm
+fpkmToTpm <- function(fpkm)
+{
+  exp(log(fpkm) - log(sum(fpkm)) + log(1e6))
+}
+# fpkmTo <- function(fpkm){
+#   fpkm
+# }
+apply(fpkm, 2, fpkmToTpm) -> tpm
+rownames(tpm) = TCGA_SKCM_htseq_fpkm$Ensembl_ID
+colSums(tpm)
+
+####
 library("rtracklayer")
 gtf_data = import('gencode.v22.annotation.gtf') #gtf的路径
 #这里使用import导入gtf文件， 生成一个GRangs对象
 gtf_data = as.data.frame(gtf_data)
 gtf_data <- gtf_data[which(gtf_data$type == "gene" & gtf_data$gene_type=="protein_coding"),]
 
-TCGA_SKCM = merge(TCGA_SKCM_htseq_fpkm,data.frame(Ensembl_ID=gtf_data$gene_id,geneName=gtf_data$gene_name),by='Ensembl_ID',all.x = T,sort = F)
-TCGA_SKCM[which(!is.na(TCGA_SKCM$geneName)),] -> TCGA_SKCM
-TCGA_SKCM$Ensembl_ID = TCGA_SKCM$geneName
-TCGA_SKCM <- subset(TCGA_SKCM,select= -geneName)
-HiSeqV2_PANCAN <- TCGA_SKCM
-##gdc tcga
 
-expressionMatrix <- as.matrix(HiSeqV2_PANCAN[,-1])
+tpm[gtf_data$gene_id,] -> pcg
+rownames(pcg) = gtf_data$gene_name[which(rownames(pcg) %in% gtf_data$gene_id)]
+expressionMatrix = pcg
 
-# ###################
-##log2(fpkm+1) to fpkm
-2^expressionMatrix -1 -> expressionMatrix
-##fpkm to tpm
-fpkmToTpm <- function(fpkm)
-{
-  exp(log(fpkm) - log(sum(fpkm)) + log(1e6))
-}
-fpkmToTpm(expressionMatrix) -> expressionMatrix
-rownames(expressionMatrix) = HiSeqV2_PANCAN$Ensembl_ID
+
 # ##################
-# 
-# rownames(expressionMatrix) = HiSeqV2_PANCAN$sample
 expressionMatrix[1:5,1:5]
 sapply(colnames(expressionMatrix), function(u){unlist(strsplit(u, split="-"))[4]}) -> type
 expressionMatrix = expressionMatrix[, type=="06A" | type=="01A"]
 dim(expressionMatrix)
+#write.table(data.frame(genes=rownames(expressionMatrix),expressionMatrix,check.names=FALSE),file = "skcm/skcm_tpm.txt",quote = F,sep = "\t",row.names = F,fileEncoding = "utf8")
 
 # #############
 # ##count to tpm
@@ -133,14 +145,16 @@ gsva.es <- gsva(expressionMatrix, geneSet,method="ssgsea", verbose=T)
 dim(gsva.es)
 gsva.es[1:5, 1:5]
 
-
+{
 ############
 ##vega score
-vega <- read.csv('D:/projects/PycharmProjects/vega/data/skcm/results50.csv',header = F)
+vega <- read.csv('D:/projects/PycharmProjects/vega/data/skcm/results.csv',header = F)
 dim(vega)
 vega= t(vega)
-colnames(vega) = colnames(gsva.es)
+colnames(vega) = colnames(expressionMatrix)
+rownames(vega) = c(names(geneSet),"all")
 ############
+}
 
 {
 #################
@@ -179,17 +193,21 @@ names(x1) = substr(names(x1),1,15)
 
 library('pheatmap')
 # hierarchal cluster
-pheatmap(gsva.es,cluster_rows =F,show_colnames = F) -> res
+pheatmap(gsva.es,cluster_rows =F,show_colnames = F,cutree_cols = 4) -> res
 cutree(res$tree_col,k=4) -> x1
-names(x1) = substr(names(x1),1,15)
+cutree(res$tree_col,k=5) -> x2
+#cutree(res$tree_col,k=6) -> x3
+annotation_col = data.frame(cluster4=as.factor(x1),cluster5=as.factor(x2))
+pheatmap(gsva.es,cluster_rows =F,show_colnames = F,annotation_col = annotation_col,cutree_cols = 4)
+
 
 ###read the survival data
-survivalData <- read_delim("TCGA/SKCM/survival_SKCM_survival.txt",
+survivalData <- read_delim(paste0("D:/TCGA _GDC/TCGA-",CANCER,".survival.tsv.gz"),
                            delim = "\t", escape_double = FALSE,
                            trim_ws = TRUE)
-# survivalData <- read_delim("skcm/TCGA-SKCM.survival.tsv",
-#                            delim = "\t", escape_double = FALSE,
-#                            trim_ws = TRUE)
+duplicatedPatient = survivalData$`_PATIENT`[which(duplicated(survivalData$`_PATIENT`))]
+survivalData = survivalData[survivalData$`_PATIENT` %in% setdiff(survivalData$`_PATIENT`,duplicatedPatient),]
+
 survivalData2 <- merge(survivalData,data.frame(sample=names(x1),cluster=as.vector(x1)),by='sample',all.x = T,sort = F)
 survivalData2 <- survivalData2[which(!is.na(survivalData2$cluster)),]
 
@@ -199,8 +217,10 @@ fit <- survfit(Surv(OS.time,OS) ~ cluster,data=survivalData2)
 #fit <- survfit(Surv(PFI.time,PFI) ~ cluster,data=survivalData2)
 #summary(fit)
 ggsurvplot(fit, data=survivalData2,pval = TRUE,ggtheme = theme_minimal())
-ggsurvplot(fit, data=survivalData2,pval = TRUE,ggtheme = theme_minimal(),xlim=c(0,1800),break.time.by=300,risk.table = T)
+#ggsurvplot(fit, data=survivalData2,pval = TRUE,ggtheme = theme_minimal(),xlim=c(0,1800),break.time.by=300,risk.table = T)
 ggsurvplot(fit, data=survivalData2,pval = TRUE,ggtheme = theme_minimal(),xlim=c(0,1800),break.time.by=300)
+
+
 ##HR of cluster 1,2,3,4
 survivalData2$cluster[which(survivalData2$cluster!=4)] = rep(0,length(which(survivalData2$cluster!=1)))
 res.cox <- coxph(Surv(OS.time,OS) ~ cluster,data=survivalData2)
@@ -216,6 +236,7 @@ HR_95CI <- function(x){
 }
 HR_95CI(res.cox)
 cox.zph(res.cox) -> temp
+summary(temp)
 plot(temp)
 ###the log rank test is a popular test to test the null hypothesis of no difference in survival between two or more independent groups.
 survdiff(Surv(OS.time,OS) ~ cluster,data=survivalData2)
