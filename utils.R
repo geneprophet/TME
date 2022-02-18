@@ -7,7 +7,30 @@ write.gmt <- function(gs,file){
   })
   sink()
 }
-write.gmt(geneSet3,'new_signatures.txt')
+write.gmt(geneSet3,'geneSet3_signatures.txt')
+write.gmt(geneSet_filter,'geneSet_filter_signatures.txt')
+write.gmt(geneSet_all_pathyway,'geneSet_all_pathyway_signatures.txt')
+
+
+# Gene symbol search function
+library(org.Hs.eg.db)
+keytypes(org.Hs.eg.db)
+ENTREZtoSYMBOL <- function(x){
+  vec=mapIds(org.Hs.eg.db,keys=x,column="SYMBOL",keytype="ENTREZID",multiVals="first")
+  repl=which(is.na(vec))
+  for(y in repl){vec[y]=x[y]}
+  return(vec)
+}
+
+# Gene symbol search function
+ENSEMBLIDtoSYMBOL <- function(x){
+  vec=mapIds(org.Hs.eg.db,keys=x,column="SYMBOL",keytype="ENSEMBL",multiVals="first")
+  repl=which(is.na(vec))
+  for(y in repl){vec[y]=x[y]}
+  return(vec)
+}
+
+
 
 library(clusterProfiler)
 hallmarks = read.gmt('hallmarks.gmt')
@@ -66,10 +89,13 @@ gtf_data <- gtf_data[which(gtf_data$type == "gene" & gtf_data$gene_type=="protei
 library(Seurat)
 library(loomR)
 library(SeuratDisk)
+#read data 
 load('G:/AD_seurat.Rdata')
-N.loom <- as.loom(AD_seurat,filename="G:/AD.loom")
+AD_seurat = readRDS('C:/Users/kang/Desktop/scRNA_AF_CM_merge.rds')
+#convert from Seurat to loom
+N.loom <- as.loom(AD_seurat,filename="C:/Users/kang/Desktop/scRNA_AF_CM_merge.loom")
 N.loom$close_all()
-##
+####
 ##conver from anndata to seurat
 Convert("adata/adata_scvi_cm2.h5ad", dest = "h5seurat", overwrite = TRUE)
 seurat <- LoadH5Seurat("adata/adata_scvi_cm2.h5seurat")
@@ -77,7 +103,6 @@ library(rhdf5)
 structure <- h5ls("adata/adata_scvi_cm2.h5seurat")
 cells <- h5read("adata/adata_scvi_cm2.h5seurat","cell.names")
 features <- h5read("adata/adata_scvi_cm2.h5seurat","assays/RNA/counts")
-
 ###############
 
 ########

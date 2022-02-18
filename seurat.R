@@ -2,7 +2,6 @@
 #install.packages('Seurat')
 library(Seurat)
 library(dplyr)
-library(Seurat)
 library(patchwork)
 
 # Load the PBMC dataset
@@ -24,7 +23,7 @@ plot2 <- FeatureScatter(pbmc, feature1 = "nCount_RNA", feature2 = "nFeature_RNA"
 plot1 + plot2
 pbmc <- subset(pbmc, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5)
 pbmc <- NormalizeData(pbmc, normalization.method = "LogNormalize", scale.factor = 10000)
-pbmc <- NormalizeData(pbmc)
+#pbmc <- NormalizeData(pbmc)
 
 pbmc <- FindVariableFeatures(pbmc, selection.method = "vst", nfeatures = 2000)
 
